@@ -1145,6 +1145,40 @@
         .btn-submit:hover { transform: translateY(-2px); }
         .btn-submit span { position: relative; z-index: 1; }
 
+        /* ─── FORM BANNERS ─── */
+        .form-banner {
+            padding: 0.85rem 1.25rem;
+            border-radius: 2px;
+            font-family: var(--font-sans);
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            animation: bannerIn 0.4s ease;
+        }
+
+        @keyframes bannerIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-banner-success {
+            background: rgba(61,122,69,0.15);
+            border: 1px solid rgba(61,122,69,0.4);
+            color: #2a5c30;
+        }
+
+        .form-banner-error {
+            background: rgba(180,50,50,0.1);
+            border: 1px solid rgba(180,50,50,0.3);
+            color: #8b2a2a;
+        }
+
+        /* Input invalid highlight */
+        .form-input:invalid:not(:placeholder-shown),
+        .form-textarea:invalid:not(:placeholder-shown) {
+            border-color: rgba(180,50,50,0.5);
+        }
+
         /* ─── FOOTER ─── */
         footer {
             background: var(--forest-dk);
@@ -1484,7 +1518,7 @@
                 <div class="leader-card reveal reveal-delay-1">
                     <div class="leader-avatar" style="background: linear-gradient(135deg, #1a5c42, #3d9e6a)">PS</div>
                     <div class="leader-role">Executive Director</div>
-                    <div class="leader-name">Mr. Adedeji Sijuwade</div>
+                    <div class="leader-name">Prof. Adedeji Sijuwade</div>
                     <p class="leader-bio">A seasoned professional in agribusiness for 15+ years, specializing in the cultivation of herbs and spices, value chain development for export, and climate change initiatives including cashew tree cultivation across Nigeria.</p>
                 </div>
                 <div class="leader-card reveal reveal-delay-2">
@@ -1569,31 +1603,37 @@
 
                 <div class="reveal">
                     <div class="section-label" style="color:var(--gold); margin-top:0">Send a Message</div>
-                    <div class="contact-form">
+                    <form id="contactForm" class="contact-form" action="https://formspree.io/f/xojzkarr" method="POST" novalidate>
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">First Name</label>
-                                <input type="text" class="form-input" placeholder="John">
+                                <label class="form-label" for="firstName">First Name</label>
+                                <input type="text" id="firstName" name="first_name" class="form-input" placeholder="John" required>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Last Name</label>
-                                <input type="text" class="form-input" placeholder="Smith">
+                                <label class="form-label" for="lastName">Last Name</label>
+                                <input type="text" id="lastName" name="last_name" class="form-input" placeholder="Smith" required>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Email Address</label>
-                            <input type="email" class="form-input" placeholder="john@company.com">
+                            <label class="form-label" for="email">Email Address</label>
+                            <input type="email" id="email" name="email" class="form-input" placeholder="john@company.com" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Subject</label>
-                            <input type="text" class="form-input" placeholder="Commodity inquiry, partnership...">
+                            <label class="form-label" for="subject">Subject</label>
+                            <input type="text" id="subject" name="subject" class="form-input" placeholder="Commodity inquiry, partnership...">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Message</label>
-                            <textarea class="form-textarea" placeholder="Tell us about your needs..."></textarea>
+                            <label class="form-label" for="message">Message</label>
+                            <textarea id="message" name="message" class="form-textarea" placeholder="Tell us about your needs..." required></textarea>
                         </div>
-                        <button class="btn-submit" onclick="handleFormSubmit(this)"><span>Send Message →</span></button>
-                    </div>
+                        <div id="formSuccess" class="form-banner form-banner-success" style="display:none;">
+                            ✅ &nbsp;Message sent! We'll be in touch shortly.
+                        </div>
+                        <div id="formError" class="form-banner form-banner-error" style="display:none;">
+                            ⚠️ &nbsp;Something went wrong. Please try again or email us directly.
+                        </div>
+                        <button type="submit" class="btn-submit" id="submitBtn"><span>Send Message →</span></button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -1699,20 +1739,50 @@
     const statsEl = document.querySelector('.hero-stats');
     if (statsEl) statsObs.observe(statsEl);
 
-    /* ─── FORM SUBMIT ─── */
-    function handleFormSubmit(btn) {
-        const orig = btn.innerHTML;
-        btn.innerHTML = '<span>Sending…</span>';
-        btn.disabled = true;
-        setTimeout(() => {
-            btn.innerHTML = '<span>✓ Message Sent!</span>';
-            btn.style.background = '#3d7a45';
-            setTimeout(() => {
-                btn.innerHTML = orig;
-                btn.style.background = '';
+    /* ─── FORM SUBMIT (Formspree) ─── */
+    const contactForm = document.getElementById('contactForm');
+    if (contactForm) {
+        contactForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('submitBtn');
+            const successBanner = document.getElementById('formSuccess');
+            const errorBanner   = document.getElementById('formError');
+
+            // Hide banners, show loading
+            successBanner.style.display = 'none';
+            errorBanner.style.display   = 'none';
+            btn.disabled = true;
+            btn.innerHTML = '<span>Sending…</span>';
+
+            const data = new FormData(contactForm);
+
+            try {
+                const res = await fetch('https://formspree.io/f/xojzkarr', {
+                    method: 'POST',
+                    body: data,
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (res.ok) {
+                    successBanner.style.display = 'block';
+                    btn.innerHTML = '<span>✓ Sent!</span>';
+                    btn.style.background = '#3d7a45';
+                    contactForm.reset();
+                    setTimeout(() => {
+                        btn.innerHTML = '<span>Send Message →</span>';
+                        btn.style.background = '';
+                        btn.disabled = false;
+                    }, 4000);
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (err) {
+                errorBanner.style.display = 'block';
+                btn.innerHTML = '<span>Send Message →</span>';
                 btn.disabled = false;
-            }, 3000);
-        }, 1400);
+            }
+        });
     }
     </script>
 </body>
